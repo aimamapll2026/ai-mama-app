@@ -1636,15 +1636,19 @@ function renderFreshBanner(){
   const el=document.getElementById('freshBanner');
   if(!el) return;
   const seedUpdated=(window.__AIMAMA_SEED__&&window.__AIMAMA_SEED__.dataUpdatedAt)||'';
+  // 用日期字符串直接比对（避免时区导致「今天」判断失效）
+  function ymd(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+  function hm(str){ const m=/T(\d{2}):(\d{2})/.exec(str||''); return m?(m[1]+':'+m[2]):''; }
   let label='今天';
   if(seedUpdated){
-    const d=new Date(seedUpdated);
     const now=new Date();
-    const sameDay=d.toDateString()===now.toDateString();
-    const y=new Date(now.getTime()-86400000);
-    if(sameDay) label='今天 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    else if(d.toDateString()===y.toDateString()) label='昨天 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    else label=(d.getMonth()+1)+'月'+d.getDate()+'日';
+    const seedDay=String(seedUpdated).slice(0,10);   // YYYY-MM-DD（已含 +08:00 的本地日期）
+    const todayStr=ymd(now);
+    const yObj=new Date(now.getTime()-86400000);
+    const yesterdayStr=ymd(yObj);
+    if(seedDay===todayStr) label='今天 '+hm(seedUpdated);
+    else if(seedDay===yesterdayStr) label='昨天 '+hm(seedUpdated);
+    else { const p=seedDay.split('-'); label=parseInt(p[1])+'月'+parseInt(p[2])+'日'; }
   }
   const list=(window.__AIMAMA_SEED__&&window.__AIMAMA_SEED__.opportunities)||[];
   const soon=list.filter(function(o){const n=daysLeft(o.deadline);return n>=0&&n<=21;}).length;
