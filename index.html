@@ -648,6 +648,21 @@ textarea::placeholder { color:var(--text-faint); }
       Object.keys(base).forEach(function (k) {
         if (parsed[k] === undefined) parsed[k] = base[k];
       });
+      // —— 数据新鲜度迁移：网址上的种子数据比本地新时，自动更新机会与经验 ——
+      // （保留用户自己的：记录 records、内容 contents、周报 reports、设置 settings）
+      try {
+        function ts(x){ var t=Date.parse(x||''); return isNaN(t)?0:t; }
+        var seedTime = ts(window.__AIMAMA_SEED__ && window.__AIMAMA_SEED__.dataUpdatedAt);
+        var localTime = ts(parsed.dataUpdatedAt);
+        if (seedTime > localTime) {
+          parsed.opportunities = base.opportunities;
+          parsed.lessons = base.lessons;
+          parsed.dataUpdatedAt = window.__AIMAMA_SEED__.dataUpdatedAt;
+          parsed.dataDateLabel = window.__AIMAMA_SEED__.dataDateLabel || parsed.dataDateLabel;
+          console.log('[AI妈妈] 检测到新数据，已自动更新机会列表 →', parsed.dataUpdatedAt);
+          save(parsed);
+        }
+      } catch (migErr) { console.warn('[AI妈妈] 数据迁移检查失败', migErr); }
       return parsed;
     } catch (e) {
       console.warn('[AI妈妈] 本地数据读取失败，已重置', e);
